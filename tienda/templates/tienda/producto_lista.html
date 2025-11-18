@@ -1,0 +1,71 @@
+{% extends 'tienda/base.html' %}
+
+{% block title %}Lista de Productos{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="fas fa-boxes me-2"></i> Productos ({{ productos|length }})</h1>
+
+{% if user.is_superuser or user.perfil.es_gerente or user.perfil.es_administrador %}
+<div class="d-flex justify-content-end mb-3">
+    <a href="{% url 'producto_crear' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Nuevo Producto
+    </a>
+</div>
+{% endif %}
+
+<div class="table-responsive shadow-sm rounded">
+    <table class="table table-hover table-striped">
+        <thead class="bg-dark text-white">
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Categoría</th>
+                <th>Estado</th>
+                <th>Acciones</th> 
+            </tr>
+        </thead>
+        <tbody>
+            {% for producto in productos %}
+            <tr>
+                <td>{{ producto.id }}</td>
+                <td>{{ producto.nombre }}</td>
+                <td>{{ producto.descripcion|default:"N/A" }}</td>
+                <!-- Precio con 2 decimales -->
+                <td class="text-success">${{ producto.precio|floatformat:2 }}</td>
+                <td>
+                    <span class="badge bg-success rounded-pill px-3 py-1">{{ producto.stock|default:"0" }}</span>
+                </td>
+                <td><span class="badge bg-info text-dark">{{ producto.categoria|default:"N/A" }}</span></td>
+                <!-- Estado corregido -->
+                <td>
+                    {% if producto.activo %}
+                        <span class="badge bg-success">Activo</span>
+                    {% else %}
+                        <span class="badge bg-danger">Inactivo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_superuser or user.perfil.es_gerente or user.perfil.es_administrador %}
+                        <a href="{% url 'producto_editar' producto.pk %}" class="btn btn-sm btn-info me-2" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'producto_eliminar' producto.pk %}" class="btn btn-sm btn-danger" title="Eliminar">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    {% else %}
+                        <span class="text-muted">Sin permisos</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center">No hay productos registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

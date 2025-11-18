@@ -1,0 +1,32 @@
+{% extends "tienda/base.html" %}
+
+{% block content %}
+<h2>Mis Compras</h2>
+
+{% if ventas %}
+  <table border="1">
+    <thead>
+      <tr>
+        <th>ID Venta</th>
+        <th>Fecha</th>
+        <th>Total</th>
+        <th>Detalle</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for venta in ventas %}
+      <tr>
+        <td>{{ venta.id }}</td>
+        <td>{{ venta.fecha_venta }}</td>
+        <td>{{ venta.total }}</td>
+        <td><a href="{% url 'cliente_detalle_venta' venta.id %}">Ver</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>No tienes compras registradas.</p>
+{% endif %}
+
+<a href="{% url 'cliente_dashboard' %}">Volver al panel</a>
+{% endblock %}

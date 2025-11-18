@@ -1,0 +1,363 @@
+
+{% extends 'tienda/base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Registrar Nueva Venta{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg p-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="text-primary-emphasis">
+                <i class="fas fa-file-invoice-dollar me-2"></i> Registrar Nueva Venta
+            </h2>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Volver al Dashboard
+            </a>
+        </div>
+        <hr>
+
+        <form method="post" id="ventaForm">
+            {% csrf_token %}
+            
+            <!-- INFORMACIÓN PRINCIPAL DE LA VENTA -->
+            <h4 class="text-success-emphasis mt-4">Información de la Venta</h4>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <!-- Cliente (VentaForm) -->
+                    {{ form.cliente|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    <!-- Empleado (Solo muestra el nombre del usuario logeado) -->
+                    <label class="form-label">Empleado</label>
+                    <input type="text" class="form-control" value="{{ user.get_full_name|default:user.username }}" readonly>
+                </div>
+            </div>
+
+            <!-- DETALLES DE PRODUCTOS VENDIDOS (FORMSET) -->
+            <h4 class="text-success-emphasis mt-4">Productos Vendidos</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" id="detalleVentaTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 35%;">Producto</th>
+                            <th style="width: 15%;">Cantidad</th>
+                            <th style="width: 20%;">Precio Unitario</th>
+                            <th style="width: 20%;">Subtotal</th>
+                            <th style="width: 10%;">Eliminar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detalleVentaBody">
+                        <!-- Aquí se renderizarán las filas del formset -->
+                        {{ formset.management_form }}
+                        
+                        {% for form in formset %}
+                        <tr class="detalle-row">
+                            <!-- Si es un formulario ya guardado (en edición), muestra el DELETE checkbox -->
+                            {% if form.instance.pk %}{{ form.DELETE }}{% endif %}
+                            
+                            <!-- Producto: campo del modelo, usamos la clase producto-select -->
+                            <td>{{ form.producto }}</td>
+                            
+                            <!-- Cantidad: campo del modelo, usamos la clase cantidad-input -->
+                            <td>{{ form.cantidad }}</td>
+                            
+                            <!-- Precio Unitario: campo del modelo, usamos la clase precio-input -->
+                            <td>{{ form.precio_unitario }}</td>
+                            
+                            <!-- Subtotal (GENERADO POR JS) -->
+                            <td class="text-end fw-bold align-middle">
+                                <span class="subtotal-display">$0.00</span>
+                                <!-- Campo oculto para mantener el valor del subtotal para envío si fuera necesario (aunque no lo usaremos para el cálculo final) -->
+                                <input type="hidden" class="subtotal-input" value="0.00">
+                            </td>
+                            
+                            <!-- Eliminar (Formset can_delete=True) -->
+                            <td class="text-center align-middle">
+                                <button type="button" class="btn btn-sm btn-danger remove-row" title="Eliminar Fila">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end fw-bold align-middle">TOTAL DE LA VENTA:</td>
+                            <td colspan="2" class="text-start fw-bold fs-5 text-success align-middle" id="totalVentaDisplay">$0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="addAnotherItem">
+                <i class="fas fa-plus me-1"></i> Agregar Otro Producto
+            </button>
+            
+            <!-- Botón de Registro y campo oculto para el total -->
+            <!-- CRÍTICO: Este campo total debe ser actualizado por JS antes de enviar -->
+            <input type="hidden" name="total" id="totalVentaInput" value="0.00">
+            <button type="submit" class="btn btn-success btn-lg w-100">
+                <i class="fas fa-check-circle me-2"></i> Registrar Venta
+            </button>
+        </form>
+
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- SCRIPT PARA MANEJO DINÁMICO DEL FORMSET Y CÁLCULOS (¡CRÍTICO!) -->
+<!-- Requiere que jQuery esté cargado en base.html antes de este script -->
+<!-- ==================================================================== -->
+<script>
+$(document).ready(function() {
+    // 1. OBTENER METADATA DEL FORMSET (manejo de índices)
+    const $formsetBody = $('#detalleVentaBody');
+    const $managementForm = $('#detalleVentaBody').find('input[name$="-TOTAL_FORMS"]');
+    let formIdx = parseInt($managementForm.val()) || 0; // Índice inicial
+
+    // 2. FUNCIÓN PARA OBTENER EL PRECIO DE VENTA DE UN PRODUCTO
+    // (Simulación con data-attributes. Reemplaza con una llamada AJAX real si es necesario)
+    // NOTA: Para este ejemplo, asumimos que el precio se puede cargar desde el HTML.
+    // Si necesitas AJAX, la vista debe devolver el precio.
+    function getPrecioVenta(productoId) {
+        // Aquí deberías hacer una llamada AJAX a Django para obtener el precio
+        // del producto con ID 'productoId'.
+        
+        // *****************************************************************
+        // ** MOCKUP (SIMULACIÓN DE DATOS): **
+        // ** Esta sección debe ser adaptada si tu vista de Django **
+        // ** NO está incluyendo los precios directamente en el HTML. **
+        // *****************************************************************
+        
+        // Simplemente devolvemos un valor de ejemplo.
+        // En una aplicación real, si el precio no está en el HTML,
+        // harías algo como:
+        /*
+        $.ajax({
+            url: '/tienda/api/precio_producto/' + productoId + '/',
+            method: 'GET',
+            async: false, // Usar síncrono para devolver el valor inmediatamente (NO recomendado en prod)
+            success: function(response) {
+                precio = response.precio;
+            }
+        });
+        return precio;
+        */
+    
+       // Si el precio está en el <option> (Django lo debe agregar en el template):
+    const $selectedOption = $formsetBody.find(`.producto-select option[value="${productoId}"]:selected`);
+       // Intenta obtener el precio de un atributo de dato, si existe (puedes añadirlo en tu vista de Django)
+    const priceFromData = $selectedOption.data('precio');
+    
+       // Si no tenemos un precio real, devolvemos 1.00 para no fallar
+    return priceFromData !== undefined ? parseFloat(priceFromData) : 1.00;
+    }
+
+    // 3. FUNCIÓN PRINCIPAL DE CÁLCULO
+    function updateCalculations($row) {
+        const $cantidadInput = $row.find('.cantidad-input');
+        const $precioInput = $row.find('.precio-input');
+        const $productoSelect = $row.find('.producto-select');
+        const $subtotalDisplay = $row.find('.subtotal-display');
+        const $subtotalInput = $row.find('.subtotal-input');
+        
+        const cantidad = parseFloat($cantidadInput.val()) || 0;
+        let precio = parseFloat($precioInput.val()) || 0;
+        const productoId = $productoSelect.val();
+
+        // Si se selecciona un producto y el precio está en 0, intenta obtener el precio por defecto.
+        if (productoId && precio === 0) {
+             // OBTENER PRECIO POR DEFECTO DEL SELECT
+            const defaultPrice = $productoSelect.find('option:selected').data('precio-venta');
+            if (defaultPrice !== undefined) {
+                precio = parseFloat(defaultPrice);
+                $precioInput.val(precio.toFixed(2));
+            }
+        }
+        
+        const subtotal = cantidad * precio;
+        
+        // Actualizar la interfaz y el campo oculto
+        $subtotalDisplay.text(`$${subtotal.toFixed(2)}`);
+        $subtotalInput.val(subtotal.toFixed(2));
+        
+        updateTotal();
+    }
+
+    // 4. FUNCIÓN PARA CALCULAR EL TOTAL GENERAL
+    function updateTotal() {
+        let total = 0.00;
+        
+        // Itera sobre todos los campos ocultos de subtotal que NO estén marcados para eliminarse
+        $formsetBody.find('.detalle-row').each(function() {
+            const $row = $(this);
+            const $deleteCheckbox = $row.find('input[type="checkbox"][id$="-DELETE"]');
+            
+            // Solo si la fila NO está marcada para eliminar
+            if (!$deleteCheckbox.length || !$deleteCheckbox.prop('checked')) {
+                const subtotal = parseFloat($row.find('.subtotal-input').val()) || 0;
+                total += subtotal;
+            }
+        });
+        
+        // Actualizar el total visible y el campo oculto para el envío
+        $('#totalVentaDisplay').text(`$${total.toFixed(2)}`);
+        $('#totalVentaInput').val(total.toFixed(2));
+    }
+
+    // 5. FUNCIÓN PARA CLONAR Y AÑADIR UNA NUEVA FILA
+    function addForm(prefix) {
+        // Esta función clona la última fila (o un template si estuviera disponible)
+        // y reemplaza los índices de los campos.
+        const emptyFormHtml = `
+            <tr class="detalle-row">
+                <!-- DELETE CHECKBOX (OCULTO) -->
+                <td><input type="checkbox" name="${prefix}-${formIdx}-DELETE" id="id_${prefix}-${formIdx}-DELETE" style="display:none;"></td>
+                
+                <!-- PRODUCTO (ASUMIMOS QUE formset.empty_form ESTÁ AQUÍ) -->
+                <td style="display: none;">${formsetEmptyForm.find('td:eq(0)').html().replace(/__prefix__/g, formIdx)}</td>
+                <td>
+                    <select class="form-select producto-select" name="${prefix}-${formIdx}-producto" id="id_${prefix}-${formIdx}-producto">
+                        <!-- Opciones de producto cargadas por Django -->
+                        {{ formset.empty_form.producto }}
+                    </select>
+                </td>
+                
+                <!-- CANTIDAD -->
+                <td>
+                    <input type="number" name="${prefix}-${formIdx}-cantidad" id="id_${prefix}-${formIdx}-cantidad" class="form-control text-end cantidad-input" min="1" value="1" placeholder="1">
+                </td>
+                
+                <!-- PRECIO UNITARIO -->
+                <td>
+                    <input type="number" name="${prefix}-${formIdx}-precio_unitario" id="id_${prefix}-${formIdx}-precio_unitario" class="form-control text-end precio-input" step="0.01" min="0.01" value="0.00" placeholder="0.00">
+                </td>
+                
+                <!-- SUBTOTAL -->
+                <td class="text-end fw-bold align-middle">
+                    <span class="subtotal-display">$0.00</span>
+                    <input type="hidden" class="subtotal-input" value="0.00">
+                </td>
+                
+                <!-- ELIMINAR -->
+                <td class="text-center align-middle">
+                    <button type="button" class="btn btn-sm btn-danger remove-row" title="Eliminar Fila">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        
+        // Insertar la nueva fila y actualizar el contador
+        $formsetBody.append(emptyFormHtml.replace(/__prefix__/g, formIdx));
+        formIdx++;
+        $managementForm.val(formIdx);
+    }
+    
+    // 6. DELEGACIÓN DE EVENTOS (Usa document para capturar eventos en elementos dinámicos)
+    
+    // Evento al cambiar Producto (para rellenar el precio)
+    $(document).on('change', '.producto-select', function() {
+        const $row = $(this).closest('.detalle-row');
+        const productoId = $(this).val();
+        
+        if (productoId) {
+            // Asumimos que el precio está en el data attribute 'data-precio-venta' del <option>
+            const precioVenta = $(this).find('option:selected').data('precio-venta');
+            
+            // Asigna el precio al campo de Precio Unitario
+            $row.find('.precio-input').val(parseFloat(precioVenta).toFixed(2) || 0.00);
+        } else {
+            // Si no hay producto, pone precio a 0
+            $row.find('.precio-input').val('0.00');
+        }
+        
+        // Recalcular Subtotal y Total
+        updateCalculations($row);
+    });
+
+    // Evento al cambiar Cantidad o Precio
+    $(document).on('input', '.cantidad-input, .precio-input', function() {
+        const $row = $(this).closest('.detalle-row');
+        updateCalculations($row);
+    });
+
+    // Evento para Añadir Fila (Formset dinámico)
+    $('#addAnotherItem').click(function() {
+        // Clonamos la última fila para mantener la estructura, si existe.
+        const $lastRow = $formsetBody.find('.detalle-row').last();
+        if ($lastRow.length) {
+            // Clonamos, reseteamos valores y actualizamos el índice.
+            const newForm = $lastRow.clone(true); // Clonamos con eventos
+            
+            // Reemplazar el índice y resetear valores
+            newForm.html(newForm.html().replace(new RegExp(`-${formIdx - 1}-`, 'g'), `-${formIdx}-`));
+            newForm.find(':input').each(function() {
+                const name = $(this).attr('name');
+                if (name) {
+                    const newName = name.replace(`-${formIdx - 1}-`, `-${formIdx}-`);
+                    $(this).attr('name', newName).attr('id', `id_${newName}`);
+                }
+                if ($(this).hasClass('cantidad-input')) $(this).val('1'); // Cantidad por defecto
+                if ($(this).hasClass('precio-input')) $(this).val('0.00'); // Precio por defecto
+                if ($(this).is('select')) $(this).val(''); // Resetear select
+                if ($(this).is(':checkbox')) $(this).prop('checked', false); // Desmarcar DELETE
+                
+            });
+
+            // Resetear displays
+            newForm.find('.subtotal-display').text('$0.00');
+            newForm.find('.subtotal-input').val('0.00');
+
+            // Insertar la nueva fila y actualizar el contador
+            $formsetBody.append(newForm);
+            formIdx++;
+            $managementForm.val(formIdx);
+            
+            // Forzar el recálculo total si se añade una fila
+            updateTotal();
+            
+        } else {
+            // Si no hay filas, el código de clonación puede ser complicado. 
+            // En este caso, lo ideal es usar un formset.empty_form en la vista de Django
+            // y cargarlo como una variable JS.
+            console.error("No se pudo agregar la fila. Verifica que Django renderice al menos una fila inicial o el 'empty_form'.");
+        }
+
+    });
+    
+    // Evento para Eliminar Fila (Formset dinámico)
+    $(document).on('click', '.remove-row', function() {
+        const $row = $(this).closest('.detalle-row');
+        const $deleteCheckbox = $row.find('input[type="checkbox"][id$="-DELETE"]');
+
+        if ($deleteCheckbox.length) {
+            // Si existe el checkbox de DELETE (para filas ya guardadas o el primer formset), lo marca.
+            $deleteCheckbox.prop('checked', true);
+            $row.hide(); // Oculta la fila
+        } else {
+            // Si no es una fila de un formset existente (o no tiene el checkbox), simplemente la remueve del DOM.
+            $row.remove();
+            
+            // Si eliminamos la última fila y quedan 0, podemos reajustar el índice si es necesario, 
+            // aunque Django lo maneja por sí mismo al final.
+        }
+        
+        // Recalcular Total después de eliminar/ocultar
+        updateTotal();
+        
+        // Evita que el botón haga submit
+        return false; 
+    });
+    
+    // 7. INICIALIZACIÓN
+    // Forzar el cálculo inicial al cargar la página (útil si hay datos de POST inválidos)
+    $formsetBody.find('.detalle-row').each(function() {
+        updateCalculations($(this));
+    });
+    updateTotal();
+});
+</script>
+{% endblock %}

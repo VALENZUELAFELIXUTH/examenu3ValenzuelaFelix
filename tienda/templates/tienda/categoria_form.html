@@ -1,0 +1,32 @@
+{% extends 'tienda/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ accion }} Categoría{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h3 class="mb-0"><i class="fas fa-tags me-2"></i> {{ accion }} Categoría</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <!-- Renderiza el formulario de Categoría con estilos Bootstrap 5 -->
+                    {{ form|crispy }}
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas {% if accion == 'Crear' %}fa-plus-circle{% else %}fa-save{% endif %} me-1"></i> {{ accion }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-end">
+                <!-- Redirige a la lista de categorías -->
+                <a href="{% url 'categoria_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

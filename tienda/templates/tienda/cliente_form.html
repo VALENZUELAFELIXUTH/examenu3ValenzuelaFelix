@@ -1,0 +1,94 @@
+{% extends 'tienda/base.html' %}
+{% block title %}Formulario de Cliente{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">
+                {% if form.instance.pk %}
+                    <i class="fas fa-user-edit"></i> Editar Cliente
+                {% else %}
+                    <i class="fas fa-user-plus"></i> Registrar Nuevo Cliente
+                {% endif %}
+            </h3>
+        </div>
+
+        <div class="card-body">
+            <form method="POST">
+                {% csrf_token %}
+
+                <!-- Mostrar errores generales -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <!-- Campos del formulario -->
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="id_nombre" class="form-label">Nombre</label>
+                        {{ form.nombre }}
+                        {% if form.nombre.errors %}
+                            <div class="text-danger small">{{ form.nombre.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="id_apellido" class="form-label">Apellido</label>
+                        {{ form.apellido }}
+                        {% if form.apellido.errors %}
+                            <div class="text-danger small">{{ form.apellido.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="id_email" class="form-label">Correo Electrónico</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="id_telefono" class="form-label">Teléfono</label>
+                        {{ form.telefono }}
+                        {% if form.telefono.errors %}
+                            <div class="text-danger small">{{ form.telefono.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12">
+                        <label for="id_direccion" class="form-label">Dirección</label>
+                        {{ form.direccion }}
+                        {% if form.direccion.errors %}
+                            <div class="text-danger small">{{ form.direccion.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="mt-4 d-flex justify-content-between">
+                    <a href="{% url 'cliente_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver a la Lista
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Guardar Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Estilo opcional para inputs -->
+<style>
+    input, textarea {
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 8px;
+    }
+</style>
+{% endblock %}

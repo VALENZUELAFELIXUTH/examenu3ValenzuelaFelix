@@ -1,0 +1,20 @@
+{% extends 'tienda/base.html' %}
+{% block content %}
+<h2>{{ titulo }}</h2>
+<p>Fecha: {{ venta.fecha_venta|date:"d/m/Y H:i" }}</p>
+<p>Total: ${{ venta.total }}</p>
+
+<h4>Productos comprados:</h4>
+<table>
+  <tr><th>Producto</th><th>Cantidad</th><th>Subtotal</th></tr>
+  {% for det in detalles %}
+  <tr>
+    <td>{{ det.producto.nombre }}</td>
+    <td>{{ det.cantidad }}</td>
+    <td>${{ det.subtotal }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<a href="{% url 'cliente_dashboard' %}">← Volver al panel</a>
+{% endblock %}
