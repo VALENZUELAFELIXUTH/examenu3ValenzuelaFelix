@@ -33,6 +33,8 @@ urlpatterns = [
     path('clientes/crear/', views.cliente_crear, name='cliente_crear'),
     path('clientes/editar/<int:pk>/', views.cliente_editar, name='cliente_editar'),
     path('clientes/eliminar/<int:pk>/', views.cliente_eliminar, name='cliente_eliminar'),
+    path('cliente/dashboard/', views.cliente_dashboard, name='cliente_dashboard'),
+    path('cliente/venta/<int:pk>/', views.cliente_detalle_venta, name='cliente_detalle_venta'),
 
 
 # ==============================
@@ -40,7 +42,9 @@ urlpatterns = [
     # ==============================
     # Esta es la URL que faltaba para resolver el error 'NoReverseMatch'
     path('ventas/registrar/', views.registrar_venta, name='registrar_venta'),
-    
     # Reporte de Ventas
     path('ventas/reporte/', views.reporte_ventas, name='reporte_ventas'),
+    path('mi-perfil/', views.mi_perfil, name='mi_perfil'),
+    path('mis-compras/', views.mis_compras, name='mis_compras'),
+    path('editar-perfil/', views.editar_perfil, name='editar_perfil'),
 ]

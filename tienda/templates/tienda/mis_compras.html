@@ -1,32 +1,32 @@
-{% extends "tienda/base.html" %}
+
+{% extends 'tienda/base.html' %}
 
 {% block content %}
-<h2>Mis Compras</h2>
+<div class="container mt-4">
+    <h2 class="mb-4">Mis Compras</h2>
 
-{% if ventas %}
-  <table border="1">
-    <thead>
-      <tr>
-        <th>ID Venta</th>
-        <th>Fecha</th>
-        <th>Total</th>
-        <th>Detalle</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for venta in ventas %}
-      <tr>
-        <td>{{ venta.id }}</td>
-        <td>{{ venta.fecha_venta }}</td>
-        <td>{{ venta.total }}</td>
-        <td><a href="{% url 'cliente_detalle_venta' venta.id %}">Ver</a></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% else %}
-  <p>No tienes compras registradas.</p>
-{% endif %}
+    <table class="table table-bordered table-striped">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Total</th>
+            </tr>
+        </thead>
 
-<a href="{% url 'cliente_dashboard' %}">Volver al panel</a>
+        <tbody>
+            {% for compra in compras %}
+            <tr>
+                <td>{{ compra.id }}</td>
+                <td>{{ compra.fecha_venta|date:"d/m/Y H:i" }}</td>
+                <td>${{ compra.total }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center">No tienes compras registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

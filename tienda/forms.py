@@ -2,7 +2,7 @@
 # Importamos forms de Django para crear formularios
 from django import forms
 from django.forms.models import inlineformset_factory 
-from .models import Producto, Categoria, Proveedor, Cliente, Venta, DetalleVenta # Importamos nuestros modelos
+from .models import Producto, Categoria, Proveedor, Cliente, Venta, DetalleVenta, PerfilUsuario # Importamos nuestros modelos
 
 
 # ============ FORMULARIO PARA PRODUCTOS ============
@@ -12,7 +12,7 @@ class ProductoForm(forms.ModelForm):
     # Meta clase define la configuración del formulario
     class Meta:
         model = Producto  # El modelo que usará este formulario
-        fields = ['nombre', 'descripcion', 'precio', 'stock', 'categoria', 'activo']  # Campos que aparecerán en el formulario
+        fields = ['nombre', 'descripcion', 'precio', 'stock', 'categoria', 'proveedores', 'activo']  # Campos que aparecerán en el formulario
         
         # Widgets: personalización de cómo se muestran los campos en HTML
         widgets = {
@@ -38,6 +38,9 @@ class ProductoForm(forms.ModelForm):
             }),
             # Select para la categoría (combobox con las opciones de categorías)
             'categoria': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'proveedores': forms.SelectMultiple(attrs={   # ✅ campo ManyToMany
                 'class': 'form-control'
             }),
             # Checkbox para el campo activo
@@ -222,3 +225,27 @@ class DetalleVentaForm(forms.ModelForm):
             'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': 'Cantidad'}),
             'precio_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
         }
+
+class PerfilForm(forms.ModelForm):
+    first_name = forms.CharField(label='Nombre', widget=forms.TextInput(attrs={'class':'form-control'}))
+    last_name = forms.CharField(label='Apellido', widget=forms.TextInput(attrs={'class':'form-control'}))
+
+    class Meta:
+        model = PerfilUsuario
+        fields = ['telefono']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.user:
+            self.fields['first_name'].initial = self.instance.user.first_name
+            self.fields['last_name'].initial = self.instance.user.last_name
+
+    def save(self, commit=True):
+        perfil = super().save(commit=False)
+        user = perfil.user
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        if commit:
+            user.save()
+            perfil.save()
+        return perfil

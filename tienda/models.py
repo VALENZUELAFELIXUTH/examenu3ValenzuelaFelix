@@ -89,7 +89,7 @@ class Producto(models.Model):
     precio = models.DecimalField(max_digits=10, decimal_places=2) 
     stock = models.IntegerField(default=0) 
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='productos') 
-    proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, blank=True, related_name='productos_suministrados') 
+    proveedores = models.ManyToManyField(Proveedor, related_name='productos_suministrados', blank=True)
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='productos_creados') 
     fecha_creacion = models.DateTimeField(auto_now_add=True) 
     activo = models.BooleanField(default=True) 

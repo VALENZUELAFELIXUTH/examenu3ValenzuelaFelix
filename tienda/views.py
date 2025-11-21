@@ -1,6 +1,5 @@
 from tienda.models import Venta
 from django.utils import timezone
-from datetime import timedelta
 from django.db import transaction 
 from datetime import timedelta, datetime, time, date # <<< IMPORTACIONES AÑADIDAS
 # tienda/views.py
@@ -14,7 +13,7 @@ from django.urls import reverse_lazy # Función para obtener URLs de forma perez
 from django.contrib.auth.models import Group # Modelo para gestionar grupos/roles de usuarios.
 from django.contrib import messages # Módulo para enviar mensajes de notificación al usuario.
 from .models import Producto, Categoria, PerfilUsuario, Proveedor, Cliente, Venta, DetalleVenta # Importa los modelos necesarios.
-from .forms import ProductoForm, CategoriaForm, ProveedorForm, ClienteForm # Importa el formulario de Producto.
+from .forms import ProductoForm, CategoriaForm, ProveedorForm, ClienteForm, PerfilForm, DetalleVentaForm # Importa el formulario de Producto.
 
 from django.db.models import Sum, Count 
 from django.utils import timezone 
@@ -136,6 +135,7 @@ def producto_lista(request):
 
 
 @login_required
+@rol_requerido('gerente', 'administrador')
 def producto_crear(request):
     """Vista para crear un nuevo producto"""
     if request.method == 'POST':  # Si se envió el formulario
@@ -616,3 +616,86 @@ def cliente_detalle_venta(request, pk):
         'detalles': detalles,
     }
     return render(request, 'tienda/cliente_detalle_venta.html', context)
+
+# =======================
+# PERFIL Y COMPRAS DEL CLIENTE
+# =======================
+
+@login_required
+def mi_perfil(request):
+    user = request.user
+
+    # Primero verificamos si es cliente
+    try:
+        cliente = Cliente.objects.get(usuario=user)
+        return render(request, 'tienda/mi_perfil.html', {
+            'cliente': cliente,
+            'perfil': None
+        })
+    except Cliente.DoesNotExist:
+        cliente = None
+
+    # Si no es cliente, entonces buscamos perfil de empleado
+    try:
+        perfil = PerfilUsuario.objects.get(user=user)
+    except PerfilUsuario.DoesNotExist:
+        perfil = None
+
+    return render(request, 'tienda/mi_perfil.html', {
+        'perfil': perfil,
+        'cliente': cliente
+    })
+
+
+@login_required
+def mis_compras(request):
+    """
+    Lista las compras del cliente logueado.
+    """
+    try:
+        cliente = Cliente.objects.get(usuario=request.user)   # CORREGIDO
+    except Cliente.DoesNotExist:
+        messages.error(request, "No tienes un perfil de cliente.")
+        return redirect('mi_perfil')
+
+    compras = Venta.objects.filter(cliente=cliente).order_by('-fecha_venta')
+
+    return render(request, 'tienda/mis_compras.html', {'compras': compras})
+
+
+@login_required
+def editar_perfil(request):
+    user = request.user
+
+    # === Si es CLIENTE ===
+    try:
+        cliente = Cliente.objects.get(usuario=user)
+
+        if request.method == "POST":
+            cliente.nombre = request.POST.get("nombre")
+            cliente.apellido = request.POST.get("apellido")
+            cliente.telefono = request.POST.get("telefono")
+            cliente.direccion = request.POST.get("direccion")
+            cliente.save()
+
+            messages.success(request, "Perfil actualizado correctamente.")
+            return redirect('mi_perfil')
+
+        return render(request, 'tienda/editar_perfil_cliente.html', {"cliente": cliente})
+
+    except Cliente.DoesNotExist:
+        pass
+
+    # === Si es EMPLEADO ===
+    perfil = PerfilUsuario.objects.get(user=user)
+
+    if request.method == "POST":
+        form = PerfilForm(request.POST, instance=perfil)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Perfil actualizado correctamente.")
+            return redirect('mi_perfil')
+    else:
+        form = PerfilForm(instance=perfil)
+
+    return render(request, 'tienda/editar_perfil.html', {"form": form})
